@@ -34,3 +34,95 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+![Next App setup](image.png)
+
+`npm run dev` to run the app
+
+- In app/page.tsx remove the code and type `tsrafce` for boiler plate of a component
+
+![Shadcn setup](image-1.png)
+
+- Added `button` and `sonner` components from shadcn using ` npx shadcn-ui@latest add button sonner separator` command
+
+# Using Webcam and Canvas to draw a box when a person is detected
+
+- I am going to use a package called `react-webcam` to access webcam.
+  `npm install react-webcam`
+
+- Now placing a canvas after webcam setup ` <canvas
+  ref={canvasRef}
+  className="absolute top-0 left-0 h-full w-full object-contain "
+  > </canvas>`
+
+### Shadcn theme setup
+
+- For `theme` using shadcn next-theme
+- Install `next-themes`:`npm install next-themes`
+- Create a file in `components/theme-provider.tsx` and paste
+
+  ````"use client"; import * as React from "react";
+   import { ThemeProvider as NextThemesProvider } from "next-themes"
+  import { type ThemeProviderProps } from "next-themes/dist/types"
+  export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+  }```
+
+  ````
+
+- Inside `layout.tsx` import `ThemeProvider` and Add the ThemeProvider to your root layout.
+  `import { ThemeProvider } from "@/components/theme-provider"`
+
+  ```<ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+  ```
+
+- Add a mode toggle
+  Place a mode toggle on your site to toggle between light and dark mode.
+  create a new file in components/theme-toggle.tsx and paste
+  `
+  "use client"; import \* as React from "react";
+  import { useTheme } from "next-themes";
+
+import { Button } from "@/components/ui/button";
+import {
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoonIcon, SunIcon } from "lucide-react";
+
+export function ModeToggle() {
+const { setTheme } = useTheme();
+
+return (
+<DropdownMenu>
+<DropdownMenuTrigger asChild>
+<Button variant="outline" size="icon">
+<SunIcon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+<MoonIcon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+<span className="sr-only">Toggle theme</span>
+</Button>
+</DropdownMenuTrigger>
+<DropdownMenuContent align="end">
+<DropdownMenuItem onClick={() => setTheme("light")}>
+Light
+</DropdownMenuItem>
+<DropdownMenuItem onClick={() => setTheme("dark")}>
+Dark
+</DropdownMenuItem>
+<DropdownMenuItem onClick={() => setTheme("system")}>
+System
+</DropdownMenuItem>
+</DropdownMenuContent>
+</DropdownMenu>
+);
+}
+`
