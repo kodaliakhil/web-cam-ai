@@ -126,3 +126,15 @@ System
 );
 }
 `
+
+# Object Detection
+
+- For this feature I am using `Tensorflow.js` from `https://github.com/tensorflow/tfjs-models/tree/master/coco-ssd`
+- Install and import following dependencies
+  `npm i @tensorflow-models/coco-ssd`
+  `npm i @tensorflow/tfjs-backend-cpu`
+  `npm i @tensorflow/tfjs-backend-webgl`
+  `import * as cocossd from "@tensorflow-models/coco-ssd";
+import "@tensorflow/tfjs-backend-cpu";
+import "@tensorflow/tfjs-backend-webgl";`
+- We have to load this model when our page load or a component load. So we 
