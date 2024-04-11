@@ -81,7 +81,7 @@ const HomePage = (props: Props) => {
       runPrediction();
       return () => clearInterval(interval);
     }, 100);
-  }, [webCamRef.current, model, mirrored,autoRecordEnabled]);
+  }, [webCamRef.current, model, mirrored, autoRecordEnabled]);
   async function runPrediction() {
     if (
       model &&
@@ -215,7 +215,21 @@ const HomePage = (props: Props) => {
   );
   // handler Functions
   function userPromptScreenshot() {
+    if (!webCamRef.current) {
+      toast("Camera not found. PLease Refresh.");
+    }
     //take picture
+    else {
+      const imgSrc = webCamRef.current.getScreenshot();
+      console.log(imgSrc);
+      const blob = base64Blob(imgSrc);
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${formatDate(new Date())}.png`;
+      a.click();
+    }
     //Save picture
   }
   function userPromptRecord() {
@@ -388,4 +402,15 @@ function formatDate(d: Date) {
       d.getSeconds().toString().padStart(2, "0"),
     ].join("-");
   return formattedDate;
+}
+
+function base64Blob(base64Data: any) {
+  const byteCharacters = atob(base64Data.split(",")[1]);
+  const arrayBuffer = new ArrayBuffer(byteCharacters.length);
+  const byteArray = new Uint8Array(arrayBuffer);
+
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteArray[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Blob([arrayBuffer], { type: "image/png" });
 }
