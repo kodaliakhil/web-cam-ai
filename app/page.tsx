@@ -25,10 +25,11 @@ import { toast } from "sonner";
 import * as cocossd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs-backend-cpu";
 import "@tensorflow/tfjs-backend-webgl";
-import { ObjectDetection } from "@tensorflow-models/coco-ssd";
+import { DetectedObject, ObjectDetection } from "@tensorflow-models/coco-ssd";
+import { drawOnCanvas } from "@/utils/draw";
 
 type Props = {};
-
+let interval: any = null;
 const HomePage = (props: Props) => {
   const webCamRef = useRef<Webcam>(null); // to use useRef we have use "use client"; on top of this file otherwise it will give error and this webCamRef is of type Webcam which is imported from react-webcam
   const canvasRef = useRef<HTMLCanvasElement>(null); //  This canvasRef is of type HTMLCanvasElement which is imported from react
@@ -47,7 +48,26 @@ const HomePage = (props: Props) => {
   useEffect(() => {
     setLoading(false);
   }, [model]);
-
+  useEffect(() => {
+    interval = setInterval(() => {
+      runPrediction();
+      return () => clearInterval(interval);
+    }, 100);
+  }, [webCamRef.current, model,mirrored]);
+  async function runPrediction() {
+    if (
+      model &&
+      webCamRef.current &&
+      webCamRef.current.video &&
+      webCamRef.current.video.readyState === 4
+    ) {
+      const predictions: DetectedObject[] = await model.detect(
+        webCamRef.current.video
+      );
+      resizeCanvas(canvasRef, webCamRef);
+      drawOnCanvas(mirrored, predictions, canvasRef.current?.getContext("2d"));
+    }
+  }
   async function initModel() {
     //load model and set model state
     const loadedModel: ObjectDetection = await cocossd.load({
@@ -278,3 +298,16 @@ const HomePage = (props: Props) => {
 };
 
 export default HomePage;
+
+function resizeCanvas(
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  webCamRef: React.RefObject<Webcam>
+) {
+  const canvas = canvasRef.current;
+  const video = webCamRef.current?.video;
+  if (canvas && video) {
+    const { videoWidth, videoHeight } = video;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+  }
+}
