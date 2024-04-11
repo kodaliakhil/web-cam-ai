@@ -30,9 +30,11 @@ import { drawOnCanvas } from "@/utils/draw";
 
 type Props = {};
 let interval: any = null;
+let stopTimeout: any = null;
 const HomePage = (props: Props) => {
   const webCamRef = useRef<Webcam>(null); // to use useRef we have use "use client"; on top of this file otherwise it will give error and this webCamRef is of type Webcam which is imported from react-webcam
   const canvasRef = useRef<HTMLCanvasElement>(null); //  This canvasRef is of type HTMLCanvasElement which is imported from react
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   //  States
   const [mirrored, setMirrored] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -41,6 +43,32 @@ const HomePage = (props: Props) => {
   const [model, setModel] = useState<ObjectDetection>();
   const [loading, setLoading] = useState<boolean>(true);
   //  Functions
+  useEffect(() => {
+    if (webCamRef && webCamRef.current) {
+      const stream = (webCamRef.current.video as any).captureStream();
+      if (stream) {
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            const recordedBlob = new Blob([e.data], { type: "video" });
+            const videoURL = URL.createObjectURL(recordedBlob);
+            const a = document.createElement("a");
+            a.href = videoURL;
+            a.download = `${formatDate(new Date())}.webm`;
+            a.click();
+          }
+        };
+        mediaRecorderRef.current.onstart = (e) => {
+          // console.log("Recording...");
+          setIsRecording(true);
+        };
+        mediaRecorderRef.current.onstop = (e) => {
+          setIsRecording(false);
+          // console.log("Recording stopped");
+        };
+      }
+    }
+  }, [webCamRef]);
   useEffect(() => {
     setLoading(true);
     initModel();
@@ -53,7 +81,7 @@ const HomePage = (props: Props) => {
       runPrediction();
       return () => clearInterval(interval);
     }, 100);
-  }, [webCamRef.current, model,mirrored]);
+  }, [webCamRef.current, model, mirrored,autoRecordEnabled]);
   async function runPrediction() {
     if (
       model &&
@@ -66,6 +94,16 @@ const HomePage = (props: Props) => {
       );
       resizeCanvas(canvasRef, webCamRef);
       drawOnCanvas(mirrored, predictions, canvasRef.current?.getContext("2d"));
+
+      let isPerson: boolean = false;
+      if (predictions.length > 0) {
+        predictions.forEach((prediction) => {
+          isPerson = prediction.class === "person";
+        });
+        if (isPerson && autoRecordEnabled) {
+          startRecording(true);
+        }
+      }
     }
   }
   async function initModel() {
@@ -181,8 +219,32 @@ const HomePage = (props: Props) => {
     //Save picture
   }
   function userPromptRecord() {
+    if (!webCamRef.current) {
+      toast("Camera not found. PLease Refresh.");
+    }
     // Check if Recording:    //Then Stop Recording//and Save Video
+    if (mediaRecorderRef.current?.state == "recording") {
+      mediaRecorderRef.current.requestData();
+      clearTimeout(stopTimeout);
+      mediaRecorderRef.current.stop();
+      toast("Recording Saved to Downloads");
+    }
     // if not recording:    //Start Recording
+    else {
+      startRecording(false);
+    }
+  }
+  function startRecording(doBeep: boolean) {
+    if (webCamRef.current && mediaRecorderRef.current?.state !== "recording") {
+      mediaRecorderRef.current?.start();
+      doBeep && beep(volume);
+      stopTimeout = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          mediaRecorderRef.current.requestData();
+          mediaRecorderRef.current.stop();
+        }
+      }, 30000);
+    }
   }
   function toggleAutoRecord() {
     if (autoRecordEnabled) {
@@ -310,4 +372,20 @@ function resizeCanvas(
     canvas.width = videoWidth;
     canvas.height = videoHeight;
   }
+}
+
+function formatDate(d: Date) {
+  const formattedDate =
+    [
+      (d.getMonth() + 1).toString().padStart(2, "0"),
+      d.getDate().toString().padStart(2, "0"),
+      d.getFullYear(),
+    ].join("-") +
+    " " +
+    [
+      d.getHours().toString().padStart(2, "0"),
+      d.getMinutes().toString().padStart(2, "0"),
+      d.getSeconds().toString().padStart(2, "0"),
+    ].join("-");
+  return formattedDate;
 }
